@@ -15,6 +15,9 @@ def main():
     if os.getenv("CLASSLINK_ENABLED") == "YES":
         upload_classlink(engine, db_schema)
 
+    if os.getenv("ACHIEVE3000_ENABLED") == "YES":
+        upload_achieve3000(engine, db_schema)
+
 
 def upload_classlink(engine, db_schema):
     print("Uploading data from Classlink...", flush=True)
@@ -76,6 +79,34 @@ def upload_stmath(engine, db_schema):
             print(f"Found {len(df.index)} records to upload.", flush=True)
             df.to_sql(
                 "STMath_Summary",
+                con=engine,
+                if_exists="replace",
+                schema=db_schema,
+            )
+            print("Successfully uploaded records.", flush=True)
+
+
+def upload_achieve3000(engine, db_schema):
+    print("Uploading data from Achieve3000 and SmartyAnts...")
+    cnopts = pysftp.CnOpts()
+    cnopts.hostkeys.load(".known_hosts")
+    with pysftp.Connection(
+        os.getenv("ACHIEVE3000_SFTP_HOST"),
+        username=os.getenv("ACHIEVE3000_SFTP_USERNAME"),
+        password=os.getenv("ACHIEVE3000_SFTP_PASSWORD"),
+        cnopts=cnopts,
+    ) as sftp:
+        print("Connected to FTP server", flush=True)
+        sftp.chdir(os.getenv("ACHIEVE3000_PATH_TO_FILES"))
+        files = sftp.listdir()
+        file_list = [f for f in files if f.endswith("student-byClass.csv")]
+        latest_file = sorted(file_list)[-1]
+        print(f"Found latest file: {latest_file}", flush=True)
+        with sftp.open(latest_file) as new_file:
+            df = pd.read_csv(new_file)
+            print(f"Found {len(df.index)} records to upload.", flush=True)
+            df.to_sql(
+                "Achieve3000_Summary",
                 con=engine,
                 if_exists="replace",
                 schema=db_schema,
