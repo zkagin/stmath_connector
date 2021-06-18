@@ -99,6 +99,8 @@ def upload_achieve3000(engine, db_schema):
         print("Connected to FTP server", flush=True)
         sftp.chdir(os.getenv("ACHIEVE3000_PATH_TO_FILES"))
         files = sftp.listdir()
+
+        # Achieve3000
         file_list = [f for f in files if f.endswith("student-byClass.csv")]
         latest_file = sorted(file_list)[-1]
         print(f"Found latest file: {latest_file}", flush=True)
@@ -107,6 +109,36 @@ def upload_achieve3000(engine, db_schema):
             print(f"Found {len(df.index)} records to upload.", flush=True)
             df.to_sql(
                 "Achieve3000_Summary",
+                con=engine,
+                if_exists="replace",
+                schema=db_schema,
+            )
+            print("Successfully uploaded records.", flush=True)
+
+        # SmartyAnts
+        file_list = [f for f in files if f.endswith("sa-students.csv")]
+        latest_file = sorted(file_list)[-1]
+        print(f"Found latest file: {latest_file}", flush=True)
+        with sftp.open(latest_file) as new_file:
+            df = pd.read_csv(new_file)
+            print(f"Found {len(df.index)} records to upload.", flush=True)
+            df.to_sql(
+                "SmartyAnts_Summary",
+                con=engine,
+                if_exists="replace",
+                schema=db_schema,
+            )
+            print("Successfully uploaded records.", flush=True)
+
+        # SmartyAntsEspañol
+        file_list = [f for f in files if f.endswith("sae-students.csv")]
+        latest_file = sorted(file_list)[-1]
+        print(f"Found latest file: {latest_file}", flush=True)
+        with sftp.open(latest_file) as new_file:
+            df = pd.read_csv(new_file)
+            print(f"Found {len(df.index)} records to upload.", flush=True)
+            df.to_sql(
+                "SmartyAnts_Espanol_Summary",
                 con=engine,
                 if_exists="replace",
                 schema=db_schema,
